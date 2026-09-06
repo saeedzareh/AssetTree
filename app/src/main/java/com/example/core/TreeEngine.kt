@@ -385,11 +385,22 @@ object TreeEngine {
         )
     }
 
+
+    data class ColumnMapping(
+        val symbolCol: Int = -1,
+        val companyCol: Int = -1,
+        val qtyCol: Int = -1,
+        val rialValCol: Int = -1,
+        val assetTypeCol: Int = -1,
+        val statusCol: Int = -1
+    )
+
     fun parsePastedTextToRows(
         text: String,
         minRialThreshold: Double = 0.0,
         onlyTradeable: Boolean = true,
-        groupSmallAssets: Boolean = true
+        groupSmallAssets: Boolean = true,
+        columnMapping: ColumnMapping? = null
     ): List<RawBourseRow> {
         val lines = text.trim().lines().filter { it.isNotBlank() }
         if (lines.isEmpty()) return emptyList()
@@ -402,13 +413,13 @@ object TreeEngine {
         }
 
         val rows = mutableListOf<RawBourseRow>()
-        var symbolCol = -1
-        var qtyCol = -1
-        var rialValCol = -1
-        var companyCol = -1
-        var assetTypeCol = -1
-        var tradeableQtyCol = -1
-        var headerDetected = false
+        var symbolCol = columnMapping?.symbolCol ?: -1
+        var qtyCol = columnMapping?.qtyCol ?: -1
+        var rialValCol = columnMapping?.rialValCol ?: -1
+        var companyCol = columnMapping?.companyCol ?: -1
+        var assetTypeCol = columnMapping?.assetTypeCol ?: -1
+        var tradeableQtyCol = columnMapping?.statusCol ?: -1
+        var headerDetected = columnMapping != null
 
         var otherAssetsTotalRial = 0.0
         var otherAssetsTotalQty = 0.0
@@ -423,6 +434,11 @@ object TreeEngine {
             val parts = line.split(delimiter).map { it.trim() }
             if (parts.isEmpty() || parts.all { it.isEmpty() }) continue
 
+            // If we have explicit mapping, we might still want to skip the header line.
+            if (idx == 0 && (line.contains("نماد") || line.contains("سهم") || line.contains("ارزش") || line.contains("تعداد") || line.contains("دارایی"))) {
+                continue
+            }
+            
             // Detect header line dynamically
             if (!headerDetected && (line.contains("نماد") || line.contains("سهم") || line.contains("ارزش") || line.contains("تعداد") || line.contains("دارایی"))) {
                 headerDetected = true
@@ -441,13 +457,13 @@ object TreeEngine {
             }
 
             if (parts.size >= 2) {
-                // ستون های درخواستی کاربر: نام دارایی(2)، تعداد سهم(4)، ارزش ریالی(6) -> ایندکس های 1, 3, 5
-                val symbol = if (symbolCol in parts.indices) parts[symbolCol] else parts.getOrNull(1) ?: parts[0]
-                val qty = if (qtyCol in parts.indices) parseNum(parts[qtyCol]) else parseNum(parts.getOrNull(3))
-                val rialVal = if (rialValCol in parts.indices) parseNum(parts[rialValCol]) else parseNum(parts.getOrNull(5))
-                val company = if (companyCol in parts.indices) parts[companyCol] else parts.getOrNull(2)
-                val rawAssetType = if (assetTypeCol in parts.indices) parts[assetTypeCol] else parts.getOrNull(4) ?: "قابل معامله"
-                val tradeableQty = if (tradeableQtyCol in parts.indices) parseNum(parts[tradeableQtyCol]) else null
+                // ستون های درخواستی کاربر: نماد(ستون ۳=ایندکس ۲)، تعداد سهم(ستون ۵=ایندکس ۴)، ارزش ریالی(ستون ۷=ایندکس ۶)
+                val symbol = if (symbolCol in parts.indices) parts[symbolCol] else parts.getOrNull(2) ?: parts.getOrNull(1) ?: parts[0]
+                val qty = if (qtyCol in parts.indices) parseNum(parts[qtyCol]) else parseNum(parts.getOrNull(4))
+                val rialVal = if (rialValCol in parts.indices) parseNum(parts[rialValCol]) else parseNum(parts.getOrNull(6))
+                val company = if (companyCol in parts.indices) parts[companyCol] else parts.getOrNull(3)
+                val rawAssetType = if (assetTypeCol in parts.indices) parts[assetTypeCol] else parts.getOrNull(8) ?: "قابل معامله"
+                val tradeableQty = if (tradeableQtyCol in parts.indices) parseNum(parts[tradeableQtyCol]) else parseNum(parts.getOrNull(10))
 
                 // Filter 1: Check if "نوع دارایی" is "قابل معامله" (وظیفه ۷)
                 if (onlyTradeable && rawAssetType.isNotBlank()) {
