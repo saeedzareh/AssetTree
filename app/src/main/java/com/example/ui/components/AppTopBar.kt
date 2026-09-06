@@ -108,7 +108,8 @@ fun AppTopBar(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // راست: نماد برنامه (Custom App Icon)
-                            Box(
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
                                 modifier = Modifier
                                     .size(if (isCompact) 34.dp else 38.dp)
                                     .clip(RoundedCornerShape(10.dp))
@@ -152,6 +153,14 @@ fun AppTopBar(
                                     drawCircle(color = leaf3, radius = w * 0.13f, center = Offset(w * 0.78f, h * 0.42f))
                                 }
                             }
+                            Text(
+                                text = "2.02",
+                                fontSize = if (isCompact) 11.sp else 12.5.sp,
+                                color = colors.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 1.dp)
+                            )
+                        }
 
                             Spacer(modifier = Modifier.weight(1f))
 
@@ -167,7 +176,7 @@ fun AppTopBar(
                                 ) {
                                     Text(
                                         text = persianDateTimeStr,
-                                        fontSize = if (isCompact) 12.sp else 13.5.sp,
+                                        fontSize = if (isCompact) 13.sp else 14.5.sp,
                                         color = colors.textPrimary,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.5.dp)

@@ -368,6 +368,178 @@ fun ExcelImportDialog(
                                     }
                                 }
 
+                                // کادر تطبیق و شخصی‌سازی ستون‌های خوانده شده از فایل اکسل/CSV
+                                if (parsedHeaders.isNotEmpty()) {
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant.copy(alpha = 0.6f)),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border.copy(alpha = 0.6f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "تطبیق ستون‌های فایل (تشخیص خودکار):",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = colors.textPrimary
+                                                )
+                                                Text(
+                                                    text = "${parsedHeaders.size} ستون شناسایی شد",
+                                                    fontSize = 10.sp,
+                                                    color = colors.primary,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Text(
+                                                text = "حالت پیش‌فرض انتخاب اولیه برنامه است. در صورت تشخیص اشتباه، ستون صحیح را از منو انتخاب کنید:",
+                                                fontSize = 10.sp,
+                                                color = colors.textSecondary,
+                                                lineHeight = 15.sp
+                                            )
+
+                                            @Composable
+                                            fun ColumnSelectRow(
+                                                title: String,
+                                                defaultNote: String,
+                                                selectedIdx: Int,
+                                                onSelect: (Int) -> Unit
+                                            ) {
+                                                var expanded by remember { mutableStateOf(false) }
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 2.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1.1f)) {
+                                                        Text(
+                                                            text = title,
+                                                            fontSize = 11.5.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = colors.textPrimary
+                                                        )
+                                                        Text(
+                                                            text = defaultNote,
+                                                            fontSize = 9.5.sp,
+                                                            color = colors.textSecondary
+                                                        )
+                                                    }
+                                                    Box(modifier = Modifier.weight(1.4f)) {
+                                                        OutlinedButton(
+                                                            onClick = { expanded = true },
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .height(36.dp),
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                                        ) {
+                                                            val selectedLabel = if (selectedIdx in parsedHeaders.indices) {
+                                                                "ستون ${selectedIdx + 1}: ${parsedHeaders[selectedIdx]}"
+                                                            } else {
+                                                                "انتخاب نشده"
+                                                            }
+                                                            Text(
+                                                                text = selectedLabel,
+                                                                fontSize = 10.sp,
+                                                                maxLines = 1,
+                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                                color = if (selectedIdx in parsedHeaders.indices) colors.primary else colors.textSecondary
+                                                            )
+                                                            Spacer(modifier = Modifier.weight(1f))
+                                                            Icon(
+                                                                imageVector = Icons.Default.ArrowDropDown,
+                                                                contentDescription = null,
+                                                                modifier = Modifier.size(18.dp),
+                                                                tint = colors.textSecondary
+                                                            )
+                                                        }
+                                                        DropdownMenu(
+                                                            expanded = expanded,
+                                                            onDismissRequest = { expanded = false },
+                                                            modifier = Modifier
+                                                                .background(colors.surface, RoundedCornerShape(10.dp))
+                                                                .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                                                        ) {
+                                                            DropdownMenuItem(
+                                                                text = { Text("انتخاب نشده (خالی)", fontSize = 11.sp, color = colors.textSecondary) },
+                                                                onClick = {
+                                                                    onSelect(-1)
+                                                                    expanded = false
+                                                                }
+                                                            )
+                                                            parsedHeaders.forEachIndexed { idx, h ->
+                                                                val isSelected = (idx == selectedIdx)
+                                                                DropdownMenuItem(
+                                                                    text = {
+                                                                        Text(
+                                                                            text = "ستون ${idx + 1}: $h",
+                                                                            fontSize = 11.sp,
+                                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                                            color = if (isSelected) colors.primary else colors.textPrimary
+                                                                        )
+                                                                    },
+                                                                    onClick = {
+                                                                        onSelect(idx)
+                                                                        expanded = false
+                                                                    }
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            ColumnSelectRow(
+                                                title = "«نماد»",
+                                                defaultNote = "پیش‌فرض: ستون ۳",
+                                                selectedIdx = colMapSymbol,
+                                                onSelect = { colMapSymbol = it }
+                                            )
+                                            ColumnSelectRow(
+                                                title = "«نام شرکت»",
+                                                defaultNote = "پیش‌فرض: ستون ۴",
+                                                selectedIdx = colMapCompany,
+                                                onSelect = { colMapCompany = it }
+                                            )
+                                            ColumnSelectRow(
+                                                title = "«تعداد سهم»",
+                                                defaultNote = "پیش‌فرض: ستون ۵",
+                                                selectedIdx = colMapQty,
+                                                onSelect = { colMapQty = it }
+                                            )
+                                            ColumnSelectRow(
+                                                title = "«ارزش ریالی»",
+                                                defaultNote = "پیش‌فرض: ستون ۷",
+                                                selectedIdx = colMapRialVal,
+                                                onSelect = { colMapRialVal = it }
+                                            )
+                                            ColumnSelectRow(
+                                                title = "«نوع دارایی»",
+                                                defaultNote = "پیش‌فرض: ستون ۹",
+                                                selectedIdx = colMapAssetType,
+                                                onSelect = { colMapAssetType = it }
+                                            )
+                                            ColumnSelectRow(
+                                                title = "«وضعیت»",
+                                                defaultNote = "پیش‌فرض: ستون ۱۱",
+                                                selectedIdx = colMapStatus,
+                                                onSelect = { colMapStatus = it }
+                                            )
+                                        }
+                                    }
+                                }
+
                                 // 2. Sample Data Button
                                 Card(
                                     shape = RoundedCornerShape(14.dp),
